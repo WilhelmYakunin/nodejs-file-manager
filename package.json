@@ -1,0 +1,21 @@
+{
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/WilhelmYakunin/nodejs-file-manager.git"
+    },
+    "name": "nodejs-file-namager",
+    "version": "0.0.1",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "start": "node ./bin/initFileManager.js"
+    },
+    "type": "module",
+    "keywords": [],
+    "author": "Vitali_Iakunin",
+    "license": "MIT",
+    "bugs": {
+      "url": "https://github.com/WilhelmYakunin/nodejs-file-manager/issues"
+    },
+    "homepage": "https://github.com/WilhelmYakunin/nodejs-file-manager#readme"
+  }
