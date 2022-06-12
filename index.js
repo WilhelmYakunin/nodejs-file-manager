@@ -16,7 +16,16 @@ class FileManager {
     readdir,
     read,
     writer,
-    unlink
+    unlink,
+    eol,
+    cpus, 
+    homedir,
+    arch,
+    userInfo,
+    pipeline,
+    createHash,
+    zip,
+    unzip
   }) {
     this.version = version
     this.programmDescription = description
@@ -39,6 +48,15 @@ class FileManager {
     this.read = read
     this.writer = writer
     this.unlink = unlink
+    this.eol = eol
+    this.cpus = cpus 
+    this.homedir = homedir
+    this.arch = arch
+    this.userInfo = userInfo
+    this.pipeline = pipeline
+    this.createHash = createHash
+    this.zip = zip
+    this.unzip = unzip
   }
 
   startNewLine() {
@@ -202,10 +220,283 @@ class FileManager {
             return this.showError()
           }
         })
-        this.outStream(`${this.pathName} was just renamed`)
+        this.outStream(`${this.pathName} was just renamed \n the changes will came into power after end of the session`)
         this.startNewLine()
         this.showDirectory()
       })
+    })
+  }
+
+  cp() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+
+
+      const copyFileName = this.parsePath(path).base
+      const newFilePath = this.resolvePath(this.newFileDirectory, copyFileName)
+
+      this.stat(newFilePath, (err, stats) => {
+        if (err && !err.code === 'ENOENT') {
+          this.err = err
+          return this.showError()
+        }
+
+        if (stats !== undefined && stats.isFile()) {
+          this.err = `${path} already exists`
+          return this.showError()
+        }
+      })
+
+      const writeable = this.writer(newFilePath)
+      this.read(path)
+      .on('data', (chunk) => {
+        writeable.write(chunk)
+      })
+      .on('close', () => {
+        this.outStream(`${this.pathName} was just copied`)
+        this.startNewLine()
+        this.showDirectory()
+      })
+    })
+  }
+
+  mv() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+
+
+      const copyFileName = this.parsePath(path).base
+      const newFilePath = this.resolvePath(this.newFileDirectory, copyFileName)
+
+      this.stat(newFilePath, (err, stats) => {
+        if (err && !err.code === 'ENOENT') {
+          this.err = err
+          return this.showError()
+        }
+
+        if (stats !== undefined && stats.isFile()) {
+          this.err = `${path} already exists`
+          return this.showError()
+        }
+      })
+
+      const writeable = this.writer(newFilePath)
+      this.read(path)
+      .on('data', (chunk) => {
+        writeable.write(chunk)
+      })
+      .on('close', () => {
+        this.unlink(path, (err) => {
+          if (err) {
+            this.err = err
+            return this.showError()
+          }
+        })
+        this.outStream(`
+        ${this.pathName} was just moved into ${this.newFileDirectory} 
+        the changes will came into power after end of the session
+        `)
+        this.startNewLine()
+        this.showDirectory()
+      })
+    })
+  }
+
+  rm() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+
+      this.unlink(path, (err) => {
+        if (err) {
+          this.err = err
+          return this.showError()
+        }
+        })
+        this.outStream(`${this.pathName} was just deleted \n the changes will came into power after end of the session`)
+        this.startNewLine()
+        this.showDirectory()
+    })
+  }
+
+  logEol() {
+    const toPrint = JSON.stringify(this.eol)
+    this.outStream(toPrint)
+    this.startNewLine()
+  }
+
+  logCpus() {
+    const toPrint = JSON.stringify(this.cpus(), null, 2)
+    this.outStream(toPrint)
+    this.startNewLine()
+  }
+
+  logHomedir() {
+    const toPrint = this.homedir()
+    this.outStream(toPrint)
+    this.startNewLine()
+  }
+
+  logUsername() {
+    const toPrint = this.userInfo().username
+    this.outStream(toPrint)
+    this.startNewLine()
+  }
+
+  logArch() {
+    const toPrint = this.arch()
+    this.outStream(toPrint)
+    this.startNewLine()
+  }
+
+  hash() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+      let calculatedHash
+      this.read(path)
+      .on('data', (chunk) => {
+        const createHash = this.createHash('sha256')
+        calculatedHash = createHash.update(chunk).digest('hex')
+      })
+      .on('close', () => {
+        this.outStream(`The hash of ${this.pathName} is: ${calculatedHash}`)
+        this.startNewLine()
+        this.showDirectory()
+      })
+    })
+  }
+
+  compress() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+
+
+      const prefix = '.gz'
+      const newFilePath = path + prefix
+
+      this.stat(newFilePath, (err, stats) => {
+        if (err && !err.code === 'ENOENT') {
+          this.err = err
+          return this.showError()
+        }
+
+        if (stats !== undefined && stats.isFile()) {
+          this.err = `${newFilePath} already exists`
+          return this.showError()
+        }
+      })
+
+    const writeable = this.writer(newFilePath)
+    const source = this.read(path)
+    const gzip = this.zip()
+    this.pipeline(source, gzip, writeable, (err) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+    })
+      
+    this.outStream(`
+      ${this.pathName} was just zipped into ${newFilePath}
+      `)
+      this.startNewLine()
+      this.showDirectory()
+    })
+  }
+
+  decompress() {
+    const path = this.getAbsolutePath()
+
+    this.stat(path, (err, stats) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+
+      if (!stats.isFile()) {
+        this.err = `${path} is not a file`
+        return this.showError()
+      }
+
+      const newFileBase = this.parsePath(path).base.slice(0, -3)
+      const newFilePath = this.resolvePath(this.newFileDirectory, newFileBase)
+      console.log(this.newFileDirectory, '/n', newFileBase, 'qqq', newFilePath)
+      this.stat(newFilePath, (err, stats) => {
+        if (err && !err.code === 'ENOENT') {
+          this.err = err
+          return this.showError()
+        }
+
+        if (stats !== undefined && stats.isFile()) {
+          this.err = `${newFilePath} already exists`
+          return this.showError()
+        }
+      })
+
+    const writeable = this.writer(newFilePath)
+    const source = this.read(path)
+    const upzip = this.unzip()
+    this.pipeline(source, upzip, writeable, (err) => {
+      if (err) {
+        this.err = err
+        return this.showError()
+      }
+    })
+      
+    this.outStream(`
+      ${this.pathName} was just unzipped into ${newFilePath}
+      `)
+      this.startNewLine()
+      this.showDirectory()
     })
   }
 
@@ -236,6 +527,63 @@ class FileManager {
       const newFileName = pathNames[1]
       this.pathName = currentPath
       this.newFileName = newFileName
+    }
+
+    if (/^cp /i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'cp'
+      const pathNames = userInput.replace(/^cp /, '').split(' ')
+      const currentPath = pathNames[0]
+      const newFileName = pathNames[1]
+      this.pathName = currentPath
+      this.newFileDirectory = newFileName
+    }
+
+    if (/^mv /i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'mv'
+      const pathNames = userInput.replace(/^mv /, '').split(' ')
+      const currentPath = pathNames[0]
+      const newFileName = pathNames[1]
+      this.pathName = currentPath
+      this.newFileDirectory = newFileName
+    }
+
+    if (/^rm /i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'rm'
+      this.pathName = userInput.replace(/^rm /, '')
+    }
+
+    if (/^os /i.test(this.input)) {
+      const userInput = this.input
+      this.input = userInput.replace(/^os /, '')
+    }
+
+    if (/^hash/i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'hash'
+      this.pathName = userInput.replace(/^hash /, '')
+    }
+
+    if (/^compress /i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'compress'
+      const pathNames = userInput.replace(/^compress /, '').split(' ')
+      const currentPath = pathNames[0]
+      const newFileName = pathNames[1]
+      this.pathName = currentPath
+      this.newFileDirectory = newFileName
+    }
+
+    if (/^decompress /i.test(this.input)) {
+      const userInput = this.input
+      this.input = 'decompress'
+      const pathNames = userInput.replace(/^decompress /, '').split(' ')
+      const currentPath = pathNames[0]
+      const newFileDir = pathNames[1]
+      this.pathName = currentPath
+      this.newFileDirectory = newFileDir
     }
   }
 
@@ -289,7 +637,40 @@ class FileManager {
               break
             case 'rn':
               this.rn()
+              break
+            case 'cp':
+              this.cp()
+              break
+            case 'mv':
+              this.mv()
               break 
+            case 'rm':
+              this.rm()
+              break
+            case '--eol':
+              this.logEol()
+              break
+            case '--cpus':
+              this.logCpus()
+              break
+            case '--homedir':
+              this.logHomedir()
+              break
+            case '--username':
+              this.logUsername()
+              break
+            case '--architecture':
+              this.logArch()
+              break
+            case 'hash':
+              this.hash()
+              break
+            case 'compress':
+              this.compress()
+              break
+            case 'decompress':
+              this.decompress()
+              break
             case '.exit':
               this.sayBye()
               this.exit(1)

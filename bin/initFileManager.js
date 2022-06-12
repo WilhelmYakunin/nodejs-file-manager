@@ -3,6 +3,10 @@
 import { stdin, stdout, argv, exit, env, chdir, cwd } from 'process'
 import { readdir, stat, createReadStream, createWriteStream, unlink } from 'fs'
 import { parse, resolve } from 'path'
+import { EOL, cpus, homedir, arch, userInfo } from 'os'
+import { createHash } from 'crypto'
+import { createGzip, createGunzip } from 'zlib'
+import { pipeline } from 'stream'
 import FileManager from '../index.js'
 
 const defaultConfig = {
@@ -29,7 +33,16 @@ const defaultConfig = {
     stat: stat,
     read: createReadStream,
     writer: createWriteStream,
-    unlink: unlink
+    unlink: unlink,
+    createHash: createHash,
+    pipeline: pipeline,
+    zip: createGzip,
+    unzip: createGunzip,
+    eol: EOL,
+    cpus: cpus, 
+    homedir: homedir,
+    arch: arch,
+    userInfo: userInfo
 }
 
 const initApp = new FileManager(defaultConfig);
