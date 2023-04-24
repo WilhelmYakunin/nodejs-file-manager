@@ -25,7 +25,8 @@ class FileManager {
     pipeline,
     createHash,
     zip,
-    unzip
+    unzip,
+    commands
   }) {
     this.version = version
     this.programmDescription = description
@@ -57,6 +58,18 @@ class FileManager {
     this.createHash = createHash
     this.zip = zip
     this.unzip = unzip
+    this.up = commands.up.bind(this)
+    this.compress = commands.compress.bind(this)
+    this.decompress = commands.decompress.bind(this)
+    this.cd = commands.cd.bind(this)
+    this.ls = commands.ls.bind(this)
+    this.hash = commands.hash.bind(this)
+    this.cat = commands.cat.bind(this)
+    this.add = commands.add.bind(this)
+    this.rn = commands.rn.bind(this)
+    this.cp = commands.cp.bind(this)
+    this.mv = commands.mv.bind(this)
+    this.rm = commands.rm.bind(this)
   }
 
   startNewLine() {
@@ -107,245 +120,55 @@ class FileManager {
   }
 
   getAbsolutePath() {
+
     const folderInput = this.pathName
 
-    if (folderInput.slice(0, 2) === './') {
-      return this.getCurrentDirName() + '\\' + folderInput.replace(/.\//, '')
+    if (folderInput) {
+      if (folderInput.slice(0, 2) === './') {
+        return this.getCurrentDirName() + '\\' + folderInput.replace(/.\//, '')
+      }
+  
+      return folderInput
     }
-
-    return folderInput
+    this.err = `incorrect input folder`
+    this.showError()
+    return this.getCurrentDirName()
   }
 
   up() {
-    const dirname = this.getCurrentDirName()
-    if (dirname === this.initFolder) {
-      return this.showDirectory()
-    }
-    const currentDir = this.getCurrentDirName()
-    const path = currentDir.slice(0, currentDir.lastIndexOf('\\'))
-
-    this.chdir(path)
-    this.showDirectory()
+    this.up()
   }
 
   cd() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = `${path} is not a folder`
-        return this.showError()
-      }
-      if (stats.isDirectory()) {
-        this.chdir(path)
-        this.startNewLine()
-        this.showDirectory()
-      }
-    })
+    this.cd()
   }
 
   ls() {
-    const dirname = this.getCurrentDirName()
-
-    this.readdir(dirname, { withFileTypes: true }, (err, elements) => {
-      if (err) {
-        this.err = err
-        this.showError()
-      }
-
-      this.startNewLine()
-      elements.forEach(elem => {
-        this.outStream(elem.name)
-        this.startNewLine()
-      })
-      this.startNewLine()
-      this.showDirectory()
-    })
+    this.ls()
   }
 
   cat() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-      if (stats.isFile()) {
-        this.read(path)
-        .on('data', (chunk) => {
-          this.outStream(chunk)
-          this.startNewLine()
-          this.showDirectory()
-        })
-      }
-    })
+    this.cat()
   }
 
   add() {
-    const path = this.getCurrentDirName() + '/' + this.pathName
-
-    this.writer(path)
-      this.outStream(`${this.pathName} has just created`)
-      this.startNewLine()
-      this.showDirectory()
+    this.add()
   }
 
   rn() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-      const directory = this.parsePath(path).dir
-
-      const newFilePath = this.resolvePath(directory, this.newFileName)
-      const writeable = this.writer(newFilePath)
-      this.read(path)
-      .on('data', (chunk) => {
-        writeable.write(chunk)
-      })
-      .on('close', () => {
-        this.unlink(path, (err) => {
-          if (err) {
-            this.err = err
-            return this.showError()
-          }
-        })
-        this.outStream(`${this.pathName} was just renamed \n the changes will came into power after end of the session`)
-        this.startNewLine()
-        this.showDirectory()
-      })
-    })
+    this.rn()
   }
 
   cp() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-
-      const copyFileName = this.parsePath(path).base
-      const newFilePath = this.resolvePath(this.newFileDirectory, copyFileName)
-
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${path} already exists`
-          return this.showError()
-        }
-      })
-
-      const writeable = this.writer(newFilePath)
-      this.read(path)
-      .on('data', (chunk) => {
-        writeable.write(chunk)
-      })
-      .on('close', () => {
-        this.outStream(`${this.pathName} was just copied`)
-        this.startNewLine()
-        this.showDirectory()
-      })
-    })
+    this.cp()
   }
 
   mv() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-
-      const copyFileName = this.parsePath(path).base
-      const newFilePath = this.resolvePath(this.newFileDirectory, copyFileName)
-
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${path} already exists`
-          return this.showError()
-        }
-      })
-
-      const writeable = this.writer(newFilePath)
-      this.read(path)
-      .on('data', (chunk) => {
-        writeable.write(chunk)
-      })
-      .on('close', () => {
-        this.unlink(path, (err) => {
-          if (err) {
-            this.err = err
-            return this.showError()
-          }
-        })
-        this.outStream(`
-        ${this.pathName} was just moved into ${this.newFileDirectory} 
-        the changes will came into power after end of the session
-        `)
-        this.startNewLine()
-        this.showDirectory()
-      })
-    })
+    this.mv()
   }
 
   rm() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-      this.unlink(path, (err) => {
-        if (err) {
-          this.err = err
-          return this.showError()
-        }
-        })
-        this.outStream(`${this.pathName} was just deleted \n the changes will came into power after end of the session`)
-        this.startNewLine()
-        this.showDirectory()
-    })
+    this.rm()
   }
 
   logEol() {
@@ -379,125 +202,15 @@ class FileManager {
   }
 
   hash() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-      let calculatedHash
-      this.read(path)
-      .on('data', (chunk) => {
-        const createHash = this.createHash('sha256')
-        calculatedHash = createHash.update(chunk).digest('hex')
-      })
-      .on('close', () => {
-        this.outStream(`The hash of ${this.pathName} is: ${calculatedHash}`)
-        this.startNewLine()
-        this.showDirectory()
-      })
-    })
+    this.hash()
   }
 
   compress() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-
-      const prefix = '.gz'
-      const newFilePath = path + prefix
-
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${newFilePath} already exists`
-          return this.showError()
-        }
-      })
-
-    const writeable = this.writer(newFilePath)
-    const source = this.read(path)
-    const gzip = this.zip()
-    this.pipeline(source, gzip, writeable, (err) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-    })
-      
-    this.outStream(`
-      ${this.pathName} was just zipped into ${newFilePath}
-      `)
-      this.startNewLine()
-      this.showDirectory()
-    })
+    this.compress()
   }
 
   decompress() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-      const newFileBase = this.parsePath(path).base.slice(0, -3)
-      const newFilePath = this.resolvePath(this.newFileDirectory, newFileBase)
-      console.log(this.newFileDirectory, '/n', newFileBase, 'qqq', newFilePath)
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${newFilePath} already exists`
-          return this.showError()
-        }
-      })
-
-    const writeable = this.writer(newFilePath)
-    const source = this.read(path)
-    const upzip = this.unzip()
-    this.pipeline(source, upzip, writeable, (err) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-    })
-      
-    this.outStream(`
-      ${this.pathName} was just unzipped into ${newFilePath}
-      `)
-      this.startNewLine()
-      this.showDirectory()
-    })
+    this.decompress()
   }
 
   parseArgs() {
@@ -525,6 +238,12 @@ class FileManager {
       const pathNames = userInput.replace(/^rn /, '').split(' ')
       const currentPath = pathNames[0]
       const newFileName = pathNames[1]
+
+      if (!newFileName) {
+        this.err = `incorrect destination folder`
+        return this.showError()
+      }
+
       this.pathName = currentPath
       this.newFileName = newFileName
     }
@@ -535,6 +254,12 @@ class FileManager {
       const pathNames = userInput.replace(/^cp /, '').split(' ')
       const currentPath = pathNames[0]
       const newFileName = pathNames[1]
+ 
+      if (!newFileName) {
+        this.err = `incorrect destination folder`
+        return this.showError()
+      }
+
       this.pathName = currentPath
       this.newFileDirectory = newFileName
     }
@@ -545,6 +270,12 @@ class FileManager {
       const pathNames = userInput.replace(/^mv /, '').split(' ')
       const currentPath = pathNames[0]
       const newFileName = pathNames[1]
+
+      if (!newFileName) {
+        this.err = `incorrect destination folder`
+        return this.showError()
+      }
+
       this.pathName = currentPath
       this.newFileDirectory = newFileName
     }
@@ -553,6 +284,11 @@ class FileManager {
       const userInput = this.input
       this.input = 'rm'
       this.pathName = userInput.replace(/^rm /, '')
+
+      if (!pathName) {
+        this.err = `incorrect filename`
+        return this.showError()
+      }
     }
 
     if (/^os /i.test(this.input)) {
@@ -598,6 +334,7 @@ class FileManager {
   }
 
   listenCommandLine() {
+    this.chdir(this.root)
     this.showRoot()
 
     const inputStrem = this.inputStream
@@ -647,7 +384,7 @@ class FileManager {
             case 'rm':
               this.rm()
               break
-            case '--eol':
+            case '--EOL':
               this.logEol()
               break
             case '--cpus':
@@ -684,7 +421,7 @@ class FileManager {
             this.startNewLine()
         }
       }
-    });
+    })
   }
 }
 

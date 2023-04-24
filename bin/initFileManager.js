@@ -5,9 +5,37 @@ import { readdir, stat, createReadStream, createWriteStream, unlink } from 'fs'
 import { parse, resolve } from 'path'
 import { EOL, cpus, homedir, arch, userInfo } from 'os'
 import { createHash } from 'crypto'
-import { createGzip, createGunzip } from 'zlib'
+import { createBrotliCompress, createBrotliDecompress } from 'zlib'
 import { pipeline } from 'stream'
 import FileManager from '../index.js'
+import up from '../src/up.js'
+import cd from '../src/cd.js'
+import ls from '../src/ls.js'
+import cat from '../src/cat.js'
+import add from '../src/add.js'
+import rn from '../src/rn.js'
+import cp from '../src/cp.js'
+import mv from '../src/mv.js'
+import rm from '../src/rm.js'
+import hash from '../src/hash.js'
+import compress from '../src/compress.js'
+import decompress from '../src/decompress.js'
+
+
+const commands = {
+    up,
+    cd,
+    ls,
+    cat,
+    add,
+    rn,
+    cp,
+    mv,
+    rm,
+    hash,
+    compress,
+    decompress
+}
 
 const defaultConfig = {
     version: '0.0.1',
@@ -36,13 +64,14 @@ const defaultConfig = {
     unlink: unlink,
     createHash: createHash,
     pipeline: pipeline,
-    zip: createGzip,
-    unzip: createGunzip,
+    zip: createBrotliCompress,
+    unzip: createBrotliDecompress,
     eol: EOL,
     cpus: cpus, 
     homedir: homedir,
     arch: arch,
-    userInfo: userInfo
+    userInfo: userInfo,
+    commands,
 }
 
 const initApp = new FileManager(defaultConfig);
