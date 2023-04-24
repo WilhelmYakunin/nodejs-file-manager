@@ -8,10 +8,15 @@ export default function ls() {
       }
 
       this.startNewLine()
-      elements.forEach(elem => {
-        this.outStream(elem.name)
-        this.startNewLine()
-      })
+
+      function ShowTable(elem) {
+        const methods = ['isBlockDevice', 'isCharacterDevice', 'isDirectory', 'isFIFO', 'isFile', 'isSocket', 'isSymbolicLink'];
+        this.name = elem.name;
+        
+        this.type = methods.filter(method => elem[method]())[0].replace(/is/, '')
+      }
+      console.table(elements.map((elem) => new ShowTable(elem)))
+      
       this.startNewLine()
       this.showDirectory()
     })
