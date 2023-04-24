@@ -11,6 +11,12 @@ import FileManager from '../index.js'
 import up from '../src/up.js'
 import cd from '../src/cd.js'
 import ls from '../src/ls.js'
+import cat from '../src/cat.js'
+import add from '../src/add.js'
+import rn from '../src/rn.js'
+import cp from '../src/cp.js'
+import mv from '../src/mv.js'
+import rm from '../src/rm.js'
 import hash from '../src/hash.js'
 import compress from '../src/compress.js'
 import decompress from '../src/decompress.js'
@@ -20,6 +26,12 @@ const commands = {
     up,
     cd,
     ls,
+    cat,
+    add,
+    rn,
+    cp,
+    mv,
+    rm,
     hash,
     compress,
     decompress
