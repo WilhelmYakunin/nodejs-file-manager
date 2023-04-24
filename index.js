@@ -25,7 +25,8 @@ class FileManager {
     pipeline,
     createHash,
     zip,
-    unzip
+    unzip,
+    commands
   }) {
     this.version = version
     this.programmDescription = description
@@ -57,6 +58,12 @@ class FileManager {
     this.createHash = createHash
     this.zip = zip
     this.unzip = unzip
+    this.up = commands.up.bind(this)
+    this.compress = commands.compress.bind(this)
+    this.decompress = commands.decompress.bind(this)
+    this.cd = commands.cd.bind(this)
+    this.ls = commands.ls.bind(this)
+    this.hash = commands.hash.bind(this)
   }
 
   startNewLine() {
@@ -122,51 +129,15 @@ class FileManager {
   }
 
   up() {
-    const dirname = this.getCurrentDirName()
-    if (dirname === this.root) {
-      return this.showDirectory()
-    }
-    const currentDir = this.getCurrentDirName()
-    const path = currentDir.slice(0, currentDir.lastIndexOf('\\')) + '\\'
-    this.chdir(path)
-    this.showDirectory()
+    this.up()
   }
 
   cd() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = `${path} is not a folder`
-        return this.showError()
-      }
-      if (stats.isDirectory()) {
-        this.chdir(path)
-        this.startNewLine()
-        this.showDirectory()
-      } else {
-        this.chdir(path)
-      }
-    })
+    this.cd()
   }
 
   ls() {
-    const dirname = this.getCurrentDirName()
-
-    this.readdir(dirname, { withFileTypes: true }, (err, elements) => {
-      if (err) {
-        this.err = err
-        this.showError()
-      }
-
-      this.startNewLine()
-      elements.forEach(elem => {
-        this.outStream(elem.name)
-        this.startNewLine()
-      })
-      this.startNewLine()
-      this.showDirectory()
-    })
+    this.ls()
   }
 
   cat() {
@@ -385,123 +356,15 @@ class FileManager {
   }
 
   hash() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-      let calculatedHash
-      this.read(path)
-      .on('data', (chunk) => {
-        const createHash = this.createHash('sha256')
-        calculatedHash = createHash.update(chunk).digest('hex')
-      })
-      .on('close', () => {
-        this.outStream(`The hash of ${this.pathName} is: ${calculatedHash}`)
-        this.startNewLine()
-        this.showDirectory()
-      })
-    })
+    this.hash()
   }
 
   compress() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-      const fileName = path.split('\\')[path.split('\\').length - 1]
-      const newFilePath = this.newFileDirectory + '\\' + fileName + '.gz'
-
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${newFilePath} already exists`
-          return this.showError()
-        }
-
-        const writeable = this.writer(newFilePath)
-        const source = this.read(path)
-    
-        const gzip = this.zip()
-        this.pipeline(source, gzip, writeable, (err) => {
-          if (err) {
-            this.err = err
-            return this.showError()
-          } 
-          
-          this.outStream(`
-          ${this.pathName} was just zipped into ${newFilePath}
-          `)
-          this.startNewLine()
-          this.showDirectory()
-        })
-      })
-    })
+    this.compress()
   }
 
   decompress() {
-    const path = this.getAbsolutePath()
-
-    this.stat(path, (err, stats) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-
-      if (!stats.isFile()) {
-        this.err = `${path} is not a file`
-        return this.showError()
-      }
-
-      const newFileBase = this.parsePath(path).base.slice(0, -3)
-      const newFilePath = this.resolvePath(this.newFileDirectory, newFileBase)
-
-      this.stat(newFilePath, (err, stats) => {
-        if (err && !err.code === 'ENOENT') {
-          this.err = err
-          return this.showError()
-        }
-
-        if (stats !== undefined && stats.isFile()) {
-          this.err = `${newFilePath} already exists`
-          return this.showError()
-        }
-
-        const writeable = this.writer(newFilePath)
-        const source = this.read(path)
-        const upzip = this.unzip()
-        this.pipeline(source, upzip, writeable, (err) => {
-          if (err) {
-            this.err = err
-            return this.showError()
-          }
-          this.outStream(`
-          ${this.pathName} was just unzipped into ${newFilePath}
-          `)
-          this.startNewLine()
-          this.showDirectory()
-        })    
-      })   
-    })
+    this.decompress()
   }
 
   parseArgs() {

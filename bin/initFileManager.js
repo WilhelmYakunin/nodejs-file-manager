@@ -8,6 +8,22 @@ import { createHash } from 'crypto'
 import { createBrotliCompress, createBrotliDecompress } from 'zlib'
 import { pipeline } from 'stream'
 import FileManager from '../index.js'
+import up from '../src/up.js'
+import cd from '../src/cd.js'
+import ls from '../src/ls.js'
+import hash from '../src/hash.js'
+import compress from '../src/compress.js'
+import decompress from '../src/decompress.js'
+
+
+const commands = {
+    up,
+    cd,
+    ls,
+    hash,
+    compress,
+    decompress
+}
 
 const defaultConfig = {
     version: '0.0.1',
@@ -42,7 +58,8 @@ const defaultConfig = {
     cpus: cpus, 
     homedir: homedir,
     arch: arch,
-    userInfo: userInfo
+    userInfo: userInfo,
+    commands,
 }
 
 const initApp = new FileManager(defaultConfig);
