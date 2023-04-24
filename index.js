@@ -109,21 +109,25 @@ class FileManager {
   getAbsolutePath() {
     const folderInput = this.pathName
 
-    if (folderInput.slice(0, 2) === './') {
-      return this.getCurrentDirName() + '\\' + folderInput.replace(/.\//, '')
+    if (folderInput) {
+      if (folderInput.slice(0, 2) === './') {
+        return this.getCurrentDirName() + '\\' + folderInput.replace(/.\//, '')
+      }
+  
+      return folderInput
     }
-
-    return folderInput
+    this.err = `incorrect input folder`
+    this.showError()
+    return this.getCurrentDirName()
   }
 
   up() {
     const dirname = this.getCurrentDirName()
-    if (dirname === this.initFolder) {
+    if (dirname === this.root) {
       return this.showDirectory()
     }
     const currentDir = this.getCurrentDirName()
-    const path = currentDir.slice(0, currentDir.lastIndexOf('\\'))
-
+    const path = currentDir.slice(0, currentDir.lastIndexOf('\\')) + '\\'
     this.chdir(path)
     this.showDirectory()
   }
@@ -140,6 +144,8 @@ class FileManager {
         this.chdir(path)
         this.startNewLine()
         this.showDirectory()
+      } else {
+        this.chdir(path)
       }
     })
   }
@@ -418,10 +424,8 @@ class FileManager {
         this.err = `${path} is not a file`
         return this.showError()
       }
-
-
-      const prefix = '.gz'
-      const newFilePath = path + prefix
+      const fileName = path.split('\\')[path.split('\\').length - 1]
+      const newFilePath = this.newFileDirectory + '\\' + fileName + '.gz'
 
       this.stat(newFilePath, (err, stats) => {
         if (err && !err.code === 'ENOENT') {
@@ -433,23 +437,24 @@ class FileManager {
           this.err = `${newFilePath} already exists`
           return this.showError()
         }
-      })
 
-    const writeable = this.writer(newFilePath)
-    const source = this.read(path)
-    const gzip = this.zip()
-    this.pipeline(source, gzip, writeable, (err) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-    })
-      
-    this.outStream(`
-      ${this.pathName} was just zipped into ${newFilePath}
-      `)
-      this.startNewLine()
-      this.showDirectory()
+        const writeable = this.writer(newFilePath)
+        const source = this.read(path)
+    
+        const gzip = this.zip()
+        this.pipeline(source, gzip, writeable, (err) => {
+          if (err) {
+            this.err = err
+            return this.showError()
+          } 
+          
+          this.outStream(`
+          ${this.pathName} was just zipped into ${newFilePath}
+          `)
+          this.startNewLine()
+          this.showDirectory()
+        })
+      })
     })
   }
 
@@ -469,7 +474,7 @@ class FileManager {
 
       const newFileBase = this.parsePath(path).base.slice(0, -3)
       const newFilePath = this.resolvePath(this.newFileDirectory, newFileBase)
-      console.log(this.newFileDirectory, '/n', newFileBase, 'qqq', newFilePath)
+
       this.stat(newFilePath, (err, stats) => {
         if (err && !err.code === 'ENOENT') {
           this.err = err
@@ -480,23 +485,22 @@ class FileManager {
           this.err = `${newFilePath} already exists`
           return this.showError()
         }
-      })
 
-    const writeable = this.writer(newFilePath)
-    const source = this.read(path)
-    const upzip = this.unzip()
-    this.pipeline(source, upzip, writeable, (err) => {
-      if (err) {
-        this.err = err
-        return this.showError()
-      }
-    })
-      
-    this.outStream(`
-      ${this.pathName} was just unzipped into ${newFilePath}
-      `)
-      this.startNewLine()
-      this.showDirectory()
+        const writeable = this.writer(newFilePath)
+        const source = this.read(path)
+        const upzip = this.unzip()
+        this.pipeline(source, upzip, writeable, (err) => {
+          if (err) {
+            this.err = err
+            return this.showError()
+          }
+          this.outStream(`
+          ${this.pathName} was just unzipped into ${newFilePath}
+          `)
+          this.startNewLine()
+          this.showDirectory()
+        })    
+      })   
     })
   }
 
@@ -598,6 +602,7 @@ class FileManager {
   }
 
   listenCommandLine() {
+    this.chdir(this.root)
     this.showRoot()
 
     const inputStrem = this.inputStream
@@ -684,7 +689,7 @@ class FileManager {
             this.startNewLine()
         }
       }
-    });
+    })
   }
 }
 

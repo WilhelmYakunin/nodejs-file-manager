@@ -5,7 +5,7 @@ import { readdir, stat, createReadStream, createWriteStream, unlink } from 'fs'
 import { parse, resolve } from 'path'
 import { EOL, cpus, homedir, arch, userInfo } from 'os'
 import { createHash } from 'crypto'
-import { createGzip, createGunzip } from 'zlib'
+import { createBrotliCompress, createBrotliDecompress } from 'zlib'
 import { pipeline } from 'stream'
 import FileManager from '../index.js'
 
@@ -36,8 +36,8 @@ const defaultConfig = {
     unlink: unlink,
     createHash: createHash,
     pipeline: pipeline,
-    zip: createGzip,
-    unzip: createGunzip,
+    zip: createBrotliCompress,
+    unzip: createBrotliDecompress,
     eol: EOL,
     cpus: cpus, 
     homedir: homedir,
